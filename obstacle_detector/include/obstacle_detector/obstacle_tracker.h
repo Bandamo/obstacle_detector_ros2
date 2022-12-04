@@ -37,10 +37,18 @@
 
 #include <list>
 #include <string>
-#include <ros/ros.h>
+// #include <ros/ros.h>
+// #include <armadillo>
+// #include <std_srvs/Empty.h>
+// #include <obstacle_detector/Obstacles.h>
+
+#include <rclcpp/rclcpp.hpp>
 #include <armadillo>
-#include <std_srvs/Empty.h>
-#include <obstacle_detector/Obstacles.h>
+#include <std_srvs/srv/empty.hpp>
+
+#include <obstacle_msgs/msg/obstacles.hpp>
+#include <obstacle_msgs/msg/circle_obstacle.hpp>
+#include <obstacle_msgs/msg/segment_obstacle.hpp>
 
 #include "obstacle_detector/utilities/tracked_obstacle.h"
 #include "obstacle_detector/utilities/math_utilities.h"
@@ -48,20 +56,28 @@
 namespace obstacle_detector
 {
 
-class ObstacleTracker {
+class ObstacleTracker : public rclcpp::Node
+{
 public:
-  ObstacleTracker(ros::NodeHandle& nh, ros::NodeHandle& nh_local);
+  // ObstacleTracker(ros::NodeHandle& nh, ros::NodeHandle& nh_local);
+  ObstacleTracker(rclcpp::NodeOptions options);
   ~ObstacleTracker();
 
 private:
-  bool updateParams(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);
-  void timerCallback(const ros::TimerEvent&);
-  void obstaclesCallback(const obstacle_detector::Obstacles::ConstPtr new_obstacles);
+  // bool updateParams(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);
+  bool updateParams(const std::shared_ptr<std_srvs::srv::Empty::Request> request, std::shared_ptr<std_srvs::srv::Empty::Response> response);
+  // void timerCallback(const ros::TimerEvent&);
+  void timerCallback();
+  // void obstaclesCallback(const obstacle_detector::Obstacles::ConstPtr new_obstacles);
+  void obstaclesCallback(const obstacle_msgs::msg::Obstacles::SharedPtr new_obstacles);
 
-  void initialize() { std_srvs::Empty empt; updateParams(empt.request, empt.response); }
+  // void initialize() { std_srvs::Empty empt; updateParams(empt.request, empt.response); }
+  void initialize() { std_srvs::srv::Empty::Request::SharedPtr empt; std_srvs::srv::Empty::Response::SharedPtr empt2; updateParams(empt, empt2); }
 
-  double obstacleCostFunction(const CircleObstacle& new_obstacle, const CircleObstacle& old_obstacle);
-  void calculateCostMatrix(const std::vector<CircleObstacle>& new_obstacles, arma::mat& cost_matrix);
+  // double obstacleCostFunction(const CircleObstacle& new_obstacle, const CircleObstacle& old_obstacle);
+  double obstacleCostFunction(const obstacle_msgs::msg::CircleObstacle& new_obstacle, const obstacle_msgs::msg::CircleObstacle& old_obstacle);
+  // void calculateCostMatrix(const std::vector<CircleObstacle>& new_obstacles, arma::mat& cost_matrix);
+  void calculateCostMatrix(const std::vector<obstacle_msgs::msg::CircleObstacle>& new_obstacles, arma::mat& cost_matrix);
   void calculateRowMinIndices(const arma::mat& cost_matrix, std::vector<int>& row_min_indices);
   void calculateColMinIndices(const arma::mat& cost_matrix, std::vector<int>& col_min_indices);
 
@@ -71,26 +87,35 @@ private:
   bool fissionObstaclesCorrespond(const int idx, const int jdx, const std::vector<int>& row_min_indices, const std::vector<int>& used_new);
 
   void fuseObstacles(const std::vector<int>& fusion_indices, const std::vector<int>& col_min_indices,
-                     std::vector<TrackedObstacle>& new_tracked, const Obstacles::ConstPtr& new_obstacles);
+                    //  std::vector<TrackedObstacle>& new_tracked, const Obstacles::ConstPtr& new_obstacles);
+                      std::vector<TrackedObstacle>& new_tracked, const obstacle_msgs::msg::Obstacles::SharedPtr& new_obstacles);
   void fissureObstacle(const std::vector<int>& fission_indices, const std::vector<int>& row_min_indices,
-                       std::vector<TrackedObstacle>& new_tracked, const Obstacles::ConstPtr& new_obstacles);
+                      //  std::vector<TrackedObstacle>& new_tracked, const Obstacles::ConstPtr& new_obstacles);
+                      std::vector<TrackedObstacle>& new_tracked, const obstacle_msgs::msg::Obstacles::SharedPtr& new_obstacles);
 
   void updateObstacles();
   void publishObstacles();
 
-  ros::NodeHandle nh_;
-  ros::NodeHandle nh_local_;
+  // ros::NodeHandle nh_;
+  // ros::NodeHandle nh_local_;
 
-  ros::Subscriber obstacles_sub_;
-  ros::Publisher obstacles_pub_;
-  ros::ServiceServer params_srv_;
-  ros::Timer timer_;
+  // ros::Subscriber obstacles_sub_;
+  // ros::Publisher obstacles_pub_;
+  // ros::ServiceServer params_srv_;
+  // ros::Timer timer_;
+
+  rclcpp::Subscription<obstacle_msgs::msg::Obstacles>::SharedPtr obstacles_sub_;
+  rclcpp::Publisher<obstacle_msgs::msg::Obstacles>::SharedPtr obstacles_pub_;
+  rclcpp::Service<std_srvs::srv::Empty>::SharedPtr params_srv_;
+  rclcpp::TimerBase::SharedPtr timer_;
 
   double radius_margin_;
-  obstacle_detector::Obstacles obstacles_;
+  // obstacle_detector::Obstacles obstacles_;
+  obstacle_msgs::msg::Obstacles obstacles_;
 
   std::vector<TrackedObstacle> tracked_obstacles_;
-  std::vector<CircleObstacle> untracked_obstacles_;
+  // std::vector<CircleObstacle> untracked_obstacles_;
+  std::vector<obstacle_msgs::msg::CircleObstacle> untracked_obstacles_;
 
   // Parameters
   bool p_active_;

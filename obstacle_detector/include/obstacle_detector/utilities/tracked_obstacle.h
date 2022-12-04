@@ -35,7 +35,9 @@
 
 #pragma once
 
-#include <obstacle_detector/Obstacles.h>
+// #include <obstacle_detector/Obstacles.h>
+#include <obstacle_msgs/msg/obstacles.hpp>
+#include <obstacle_msgs/msg/circle_obstacle.hpp>
 #include "obstacle_detector/utilities/kalman.h"
 
 namespace obstacle_detector
@@ -43,7 +45,8 @@ namespace obstacle_detector
 
 class TrackedObstacle {
 public:
-  TrackedObstacle(const CircleObstacle& obstacle) : obstacle_(obstacle), kf_x_(0, 1, 2), kf_y_(0, 1, 2), kf_r_(0, 1, 2) {
+  // TrackedObstacle(const CircleObstacle& obstacle) : obstacle_(obstacle), kf_x_(0, 1, 2), kf_y_(0, 1, 2), kf_r_(0, 1, 2) {
+  TrackedObstacle(const obstacle_msgs::msg::CircleObstacle& obstacle) : obstacle_(obstacle), kf_x_(0, 1, 2), kf_y_(0, 1, 2), kf_r_(0, 1, 2) {
     fade_counter_ = s_fade_counter_size_;
     initKF();
   }
@@ -64,7 +67,8 @@ public:
     fade_counter_--;
   }
 
-  void correctState(const CircleObstacle& new_obstacle) {
+  // void correctState(const CircleObstacle& new_obstacle) {
+  void correctState(const obstacle_msgs::msg::CircleObstacle& new_obstacle) {
     kf_x_.y(0) = new_obstacle.center.x;
     kf_y_.y(0) = new_obstacle.center.y;
     kf_r_.y(0) = new_obstacle.radius;
@@ -119,7 +123,8 @@ public:
   }
 
   bool hasFaded() const { return ((fade_counter_ <= 0) ? true : false); }
-  const CircleObstacle& getObstacle() const { return obstacle_; }
+  // const CircleObstacle& getObstacle() const { return obstacle_; }
+  const obstacle_msgs::msg::CircleObstacle& getObstacle() const { return obstacle_; }
   const KalmanFilter& getKFx() const { return kf_x_; }
   const KalmanFilter& getKFy() const { return kf_y_; }
   const KalmanFilter& getKFr() const { return kf_r_; }
@@ -161,7 +166,8 @@ private:
     kf_y_.q_est(1) = obstacle_.velocity.y;
   }
 
-  CircleObstacle obstacle_;
+  // CircleObstacle obstacle_;
+  obstacle_msgs::msg::CircleObstacle obstacle_;
 
   KalmanFilter kf_x_;
   KalmanFilter kf_y_;

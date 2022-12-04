@@ -7,23 +7,28 @@
   <author>Mateusz Przybyla</author>
   <license>BSD</license>
 
-  <buildtool_depend>catkin</buildtool_depend>
-  <build_depend>message_generation</build_depend>
-  <exec_depend>message_runtime</exec_depend>
+  <buildtool_depend>ament_cmake_auto</buildtool_depend>
 
-  <depend>tf</depend>
+  <depend>tf2</depend>
+  <depend>tf2_ros</depend>
   <depend>rviz</depend>
-  <depend>roscpp</depend>
-  <depend>roslaunch</depend>
-  <depend>nodelet</depend>
+  <depend>rclcpp</depend>
+  <depend>rclcpp_components</depend>
   <depend>std_msgs</depend>
   <depend>std_srvs</depend>
   <depend>sensor_msgs</depend>
   <depend>geometry_msgs</depend>
   <depend>laser_geometry</depend>
+  <depend>obstacle_msgs</depend>
+  <!-- boost -->
+  <depend>libboost-dev</depend>
+  <depend>libarmadillo-dev</depend>
 
-  <export>
+  <!-- <export>
     <rviz plugin="${prefix}/rviz_plugins.xml"/>
     <nodelet plugin="${prefix}/nodelet_plugins.xml" />
+  </export> -->
+  <export>
+    <build_type>ament_cmake</build_type>
   </export>
 </package>

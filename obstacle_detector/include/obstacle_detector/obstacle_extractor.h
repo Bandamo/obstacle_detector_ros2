@@ -35,12 +35,15 @@
 
 #pragma once
 
-#include <ros/ros.h>
-#include <tf/transform_listener.h>
-#include <std_srvs/Empty.h>
-#include <sensor_msgs/LaserScan.h>
-#include <sensor_msgs/PointCloud.h>
-#include <obstacle_detector/Obstacles.h>
+#include <rclcpp/rclcpp.hpp>
+#include <tf2_ros/transform_listener.h>
+#include <tf2_ros/buffer.h>
+#include <std_srvs/srv/empty.hpp>
+#include <sensor_msgs/msg/laser_scan.hpp>
+#include <sensor_msgs/msg/point_cloud2.hpp>
+// #include <obstacle_detector/Obstacles.h>
+
+#include <obstacle_msgs/msg/obstacles.hpp>
 
 #include "obstacle_detector/utilities/point.h"
 #include "obstacle_detector/utilities/segment.h"
@@ -50,18 +53,22 @@
 namespace obstacle_detector
 {
 
-class ObstacleExtractor
+class ObstacleExtractor : public rclcpp::Node
 {
 public:
-  ObstacleExtractor(ros::NodeHandle& nh, ros::NodeHandle& nh_local);
+  ObstacleExtractor(rclcpp::NodeOptions options);
   ~ObstacleExtractor();
 
 private:
-  bool updateParams(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);
-  void scanCallback(const sensor_msgs::LaserScan::ConstPtr scan_msg);
-  void pclCallback(const sensor_msgs::PointCloud::ConstPtr pcl_msg);
+  // bool updateParams(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);
+  // void scanCallback(const sensor_msgs::LaserScan::ConstPtr scan_msg);
+  // void pclCallback(const sensor_msgs::PointCloud2::ConstPtr pcl_msg);
+  bool updateParams(const std::shared_ptr<std_srvs::srv::Empty::Request> request, std::shared_ptr<std_srvs::srv::Empty::Response> response);
+  void scanCallback(const sensor_msgs::msg::LaserScan::SharedPtr scan_msg);
+  void pclCallback(const sensor_msgs::msg::PointCloud2::SharedPtr pcl_msg);
 
-  void initialize() { std_srvs::Empty empt; updateParams(empt.request, empt.response); }
+  // void initialize() { std_srvs::srv::Empty empt; updateParams(empt.request, empt.response); }
+  void initialize() { std_srvs::srv::Empty::Request::SharedPtr empt; std_srvs::srv::Empty::Response::SharedPtr empt2; updateParams(empt, empt2); }
 
   void processPoints();
   void groupPoints();
@@ -77,21 +84,32 @@ private:
   void mergeCircles();
   bool compareCircles(const Circle& c1, const Circle& c2, Circle& merged_circle);
 
-  ros::NodeHandle nh_;
-  ros::NodeHandle nh_local_;
+  // ros::NodeHandle nh_;
+  // ros::NodeHandle nh_local_;
 
-  ros::Subscriber scan_sub_;
-  ros::Subscriber pcl_sub_;
-  ros::Publisher obstacles_pub_;
-  ros::ServiceServer params_srv_;
+  // ros::Subscriber scan_sub_;
+  // ros::Subscriber pcl_sub_;
+  // ros::Publisher obstacles_pub_;
+  // ros::ServiceServer params_srv_;
 
-  ros::Time stamp_;
+  rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr scan_sub_;
+  rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr pcl_sub_;
+  rclcpp::Publisher<obstacle_msgs::msg::Obstacles>::SharedPtr obstacles_pub_;
+  rclcpp::Service<std_srvs::srv::Empty>::SharedPtr params_srv_;
+
+  // ros::Time stamp_;
+  rclcpp::Time stamp_;
   std::string base_frame_id_;
-  tf::TransformListener tf_listener_;
+  // tf::TransformListener tf_listener_;
+  // tf2_ros::Buffer tf_buffer_;
+  std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
+  std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
 
   std::list<Point> input_points_;
   std::list<Segment> segments_;
   std::list<Circle> circles_;
+
+  Point point;
 
   // Parameters
   bool p_active_;

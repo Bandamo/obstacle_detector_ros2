@@ -35,24 +35,32 @@
 
 #pragma once
 
-#include <ros/ros.h>
-#include <std_srvs/Empty.h>
-#include <obstacle_detector/Obstacles.h>
+// #include <ros/ros.h>
+// #include <std_srvs/Empty.h>
+// #include <obstacle_detector/Obstacles.h>
+#include <rclcpp/rclcpp.hpp>
+#include <std_srvs/srv/empty.hpp>
+#include <obstacle_msgs/msg/obstacles.hpp>
 
 namespace obstacle_detector
 {
 
-class ObstaclePublisher
+class ObstaclePublisher : public rclcpp::Node
 {
 public:
-  ObstaclePublisher(ros::NodeHandle &nh, ros::NodeHandle &nh_local);
+  // ObstaclePublisher(ros::NodeHandle &nh, ros::NodeHandle &nh_local);
+  ObstaclePublisher(rclcpp::NodeOptions options);
   ~ObstaclePublisher();
 
 private:
-  bool updateParams(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);
-  void timerCallback(const ros::TimerEvent& e);
+  // bool updateParams(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);
+  // bool updateParams(std_srvs::srv::Empty::Request::SharedPtr req, std_srvs::srv::Empty::Response::SharedPtr res);
+  bool updateParams(const std::shared_ptr<std_srvs::srv::Empty::Request> request, std::shared_ptr<std_srvs::srv::Empty::Response> response);
+  // void timerCallback(const ros::TimerEvent& e);
+  void timerCallback();
 
-  void initialize() { std_srvs::Empty empt; updateParams(empt.request, empt.response); }
+  // void initialize() { std_srvs::Empty empt; updateParams(empt.request, empt.response); }
+  void initialize() { std_srvs::srv::Empty::Request::SharedPtr req; std_srvs::srv::Empty::Response::SharedPtr res; updateParams(req, res); }
 
   void calculateObstaclesPositions(double dt);
   void fusionExample(double t);
@@ -60,14 +68,19 @@ private:
   void publishObstacles();
   void reset();
 
-  ros::NodeHandle nh_;
-  ros::NodeHandle nh_local_;
+  // ros::NodeHandle nh_;
+  // ros::NodeHandle nh_local_;
 
-  ros::Publisher obstacle_pub_;
-  ros::ServiceServer params_srv_;
-  ros::Timer timer_;
+  // ros::Publisher obstacle_pub_;
+  // ros::ServiceServer params_srv_;
+  // ros::Timer timer_;
 
-  obstacle_detector::Obstacles obstacles_;
+  rclcpp::Publisher<obstacle_msgs::msg::Obstacles>::SharedPtr obstacle_pub_;
+  rclcpp::Service<std_srvs::srv::Empty>::SharedPtr params_srv_;
+  rclcpp::TimerBase::SharedPtr timer_;
+
+  obstacle_msgs::msg::Obstacles obstacles_;
+
   double t_;
 
   // Parameters

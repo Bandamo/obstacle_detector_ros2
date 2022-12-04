@@ -40,98 +40,169 @@
 using namespace std;
 using namespace obstacle_detector;
 
-ObstacleExtractor::ObstacleExtractor(ros::NodeHandle& nh, ros::NodeHandle& nh_local) : nh_(nh), nh_local_(nh_local) {
+// ObstacleExtractor::ObstacleExtractor(ros::NodeHandle& nh, ros::NodeHandle& nh_local) : nh_(nh), nh_local_(nh_local) {
+ObstacleExtractor::ObstacleExtractor(rclcpp::NodeOptions options) : Node("obstacle_extractor", options) {
   p_active_ = false;
 
-  params_srv_ = nh_local_.advertiseService("params", &ObstacleExtractor::updateParams, this);
+  tf_buffer_ = std::make_unique<tf2_ros::Buffer>(get_clock());
+  tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
+
+  // params_srv_ = nh_local_.advertiseService("params", &ObstacleExtractor::updateParams, this);
+  // params_srv_ = create_service<std_srvs::srv::Empty>("params", std::bind(&ObstacleExtractor::updateParams, this));
+  params_srv_ = create_service<std_srvs::srv::Empty>("params", std::bind(&ObstacleExtractor::updateParams, this, std::placeholders::_1, std::placeholders::_2));
   initialize();
 }
 
 ObstacleExtractor::~ObstacleExtractor() {
-  nh_local_.deleteParam("active");
-  nh_local_.deleteParam("use_scan");
-  nh_local_.deleteParam("use_pcl");
+  // nh_local_.deleteParam("active");
+  // nh_local_.deleteParam("use_scan");
+  // nh_local_.deleteParam("use_pcl");
 
-  nh_local_.deleteParam("use_split_and_merge");
-  nh_local_.deleteParam("circles_from_visibles");
-  nh_local_.deleteParam("discard_converted_segments");
-  nh_local_.deleteParam("transform_coordinates");
+  // nh_local_.deleteParam("use_split_and_merge");
+  // nh_local_.deleteParam("circles_from_visibles");
+  // nh_local_.deleteParam("discard_converted_segments");
+  // nh_local_.deleteParam("transform_coordinates");
 
-  nh_local_.deleteParam("min_group_points");
+  // nh_local_.deleteParam("min_group_points");
 
-  nh_local_.deleteParam("max_group_distance");
-  nh_local_.deleteParam("distance_proportion");
-  nh_local_.deleteParam("max_split_distance");
-  nh_local_.deleteParam("max_merge_separation");
-  nh_local_.deleteParam("max_merge_spread");
-  nh_local_.deleteParam("max_circle_radius");
-  nh_local_.deleteParam("radius_enlargement");
+  // nh_local_.deleteParam("max_group_distance");
+  // nh_local_.deleteParam("distance_proportion");
+  // nh_local_.deleteParam("max_split_distance");
+  // nh_local_.deleteParam("max_merge_separation");
+  // nh_local_.deleteParam("max_merge_spread");
+  // nh_local_.deleteParam("max_circle_radius");
+  // nh_local_.deleteParam("radius_enlargement");
 
-  nh_local_.deleteParam("min_x_limit");
-  nh_local_.deleteParam("max_x_limit");
-  nh_local_.deleteParam("min_y_limit");
-  nh_local_.deleteParam("max_y_limit");
+  // nh_local_.deleteParam("min_x_limit");
+  // nh_local_.deleteParam("max_x_limit");
+  // nh_local_.deleteParam("min_y_limit");
+  // nh_local_.deleteParam("max_y_limit");
 
-  nh_local_.deleteParam("frame_id");
+  // nh_local_.deleteParam("frame_id");
 }
 
-bool ObstacleExtractor::updateParams(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res) {
+// bool ObstacleExtractor::updateParams(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res) {
+bool ObstacleExtractor::updateParams(const std::shared_ptr<std_srvs::srv::Empty::Request> request, std::shared_ptr<std_srvs::srv::Empty::Response> response) {
   bool prev_active = p_active_;
 
-  nh_local_.param<bool>("active", p_active_, true);
-  nh_local_.param<bool>("use_scan", p_use_scan_, false);
-  nh_local_.param<bool>("use_pcl", p_use_pcl_, true);
+  // nh_local_.param<bool>("active", p_active_, true);
+  // nh_local_.param<bool>("use_scan", p_use_scan_, false);
+  // nh_local_.param<bool>("use_pcl", p_use_pcl_, true);
 
-  nh_local_.param<bool>("use_split_and_merge", p_use_split_and_merge_, true);
-  nh_local_.param<bool>("circles_from_visibles", p_circles_from_visibles_, true);
-  nh_local_.param<bool>("discard_converted_segments", p_discard_converted_segments_, true);
-  nh_local_.param<bool>("transform_coordinates", p_transform_coordinates_, true);
+  // nh_local_.param<bool>("use_split_and_merge", p_use_split_and_merge_, true);
+  // nh_local_.param<bool>("circles_from_visibles", p_circles_from_visibles_, true);
+  // nh_local_.param<bool>("discard_converted_segments", p_discard_converted_segments_, true);
+  // nh_local_.param<bool>("transform_coordinates", p_transform_coordinates_, true);
 
-  nh_local_.param<int>("min_group_points", p_min_group_points_, 5);
+  // nh_local_.param<int>("min_group_points", p_min_group_points_, 5);
 
-  nh_local_.param<double>("max_group_distance", p_max_group_distance_, 0.1);
-  nh_local_.param<double>("distance_proportion", p_distance_proportion_, 0.00628);
-  nh_local_.param<double>("max_split_distance", p_max_split_distance_, 0.2);
-  nh_local_.param<double>("max_merge_separation", p_max_merge_separation_, 0.2);
-  nh_local_.param<double>("max_merge_spread", p_max_merge_spread_, 0.2);
-  nh_local_.param<double>("max_circle_radius", p_max_circle_radius_, 0.6);
-  nh_local_.param<double>("radius_enlargement", p_radius_enlargement_, 0.25);
+  // nh_local_.param<double>("max_group_distance", p_max_group_distance_, 0.1);
+  // nh_local_.param<double>("distance_proportion", p_distance_proportion_, 0.00628);
+  // nh_local_.param<double>("max_split_distance", p_max_split_distance_, 0.2);
+  // nh_local_.param<double>("max_merge_separation", p_max_merge_separation_, 0.2);
+  // nh_local_.param<double>("max_merge_spread", p_max_merge_spread_, 0.2);
+  // nh_local_.param<double>("max_circle_radius", p_max_circle_radius_, 0.6);
+  // nh_local_.param<double>("radius_enlargement", p_radius_enlargement_, 0.25);
 
-  nh_local_.param<double>("min_x_limit", p_min_x_limit_, -10.0);
-  nh_local_.param<double>("max_x_limit", p_max_x_limit_,  10.0);
-  nh_local_.param<double>("min_y_limit", p_min_y_limit_, -10.0);
-  nh_local_.param<double>("max_y_limit", p_max_y_limit_,  10.0);
+  // nh_local_.param<double>("min_x_limit", p_min_x_limit_, -10.0);
+  // nh_local_.param<double>("max_x_limit", p_max_x_limit_,  10.0);
+  // nh_local_.param<double>("min_y_limit", p_min_y_limit_, -10.0);
+  // nh_local_.param<double>("max_y_limit", p_max_y_limit_,  10.0);
 
-  nh_local_.param<string>("frame_id", p_frame_id_, "map");
+  // nh_local_.param<string>("frame_id", p_frame_id_, "map");
+
+  this->declare_parameter("active", true);
+  this->declare_parameter("use_scan", false);
+  this->declare_parameter("use_pcl", true);
+
+  this->declare_parameter("use_split_and_merge", true);
+  this->declare_parameter("circles_from_visibles", true);
+  this->declare_parameter("discard_converted_segments", true);
+  this->declare_parameter("transform_coordinates", true);
+
+  this->declare_parameter("min_group_points", 5);
+
+  this->declare_parameter("max_group_distance", 0.1);
+  this->declare_parameter("distance_proportion", 0.00628);
+  this->declare_parameter("max_split_distance", 0.2);
+  this->declare_parameter("max_merge_separation", 0.2);
+  this->declare_parameter("max_merge_spread", 0.2);
+  this->declare_parameter("max_circle_radius", 0.6);
+  this->declare_parameter("radius_enlargement", 0.25);
+
+  this->declare_parameter("min_x_limit", -10.0);
+  this->declare_parameter("max_x_limit",  10.0);
+  this->declare_parameter("min_y_limit", -10.0);
+  this->declare_parameter("max_y_limit",  10.0);
+
+  this->declare_parameter("frame_id", "map");
+
+  this->get_parameter("active", p_active_);
+  this->get_parameter("use_scan", p_use_scan_);
+  this->get_parameter("use_pcl", p_use_pcl_);
+
+  this->get_parameter("use_split_and_merge", p_use_split_and_merge_);
+  this->get_parameter("circles_from_visibles", p_circles_from_visibles_);
+  this->get_parameter("discard_converted_segments", p_discard_converted_segments_);
+  this->get_parameter("transform_coordinates", p_transform_coordinates_);
+
+  this->get_parameter("min_group_points", p_min_group_points_);
+
+  this->get_parameter("max_group_distance", p_max_group_distance_);
+  this->get_parameter("distance_proportion", p_distance_proportion_);
+  this->get_parameter("max_split_distance", p_max_split_distance_);
+  this->get_parameter("max_merge_separation", p_max_merge_separation_);
+  this->get_parameter("max_merge_spread", p_max_merge_spread_);
+  this->get_parameter("max_circle_radius", p_max_circle_radius_);
+  this->get_parameter("radius_enlargement", p_radius_enlargement_);
+
+  this->get_parameter("min_x_limit", p_min_x_limit_);
+  this->get_parameter("max_x_limit", p_max_x_limit_);
+  this->get_parameter("min_y_limit", p_min_y_limit_);
+  this->get_parameter("max_y_limit", p_max_y_limit_);
+
+  this->get_parameter("frame_id", p_frame_id_);
 
   if (p_active_ != prev_active) {
     if (p_active_) {
       if (p_use_scan_)
-        scan_sub_ = nh_.subscribe("scan", 10, &ObstacleExtractor::scanCallback, this);
+        // scan_sub_ = nh_.subscribe("scan", 10, &ObstacleExtractor::scanCallback, this);
+        scan_sub_ = this->create_subscription<sensor_msgs::msg::LaserScan>("scan", 10, std::bind(&ObstacleExtractor::scanCallback, this, std::placeholders::_1));
       else if (p_use_pcl_)
-        pcl_sub_ = nh_.subscribe("pcl", 10, &ObstacleExtractor::pclCallback, this);
+        // pcl_sub_ = nh_.subscribe("pcl", 10, &ObstacleExtractor::pclCallback, this);
+        pcl_sub_ = this->create_subscription<sensor_msgs::msg::PointCloud2>("pcl", 10, std::bind(&ObstacleExtractor::pclCallback, this, std::placeholders::_1));
 
-      obstacles_pub_ = nh_.advertise<obstacle_detector::Obstacles>("raw_obstacles", 10);
+      // obstacles_pub_ = nh_.advertise<obstacle_detector::Obstacles>("raw_obstacles", 10);
+      obstacles_pub_ = this->create_publisher<obstacle_msgs::msg::Obstacles>("raw_obstacles", 10);
     }
     else {
       // Send empty message
-      obstacle_detector::ObstaclesPtr obstacles_msg(new obstacle_detector::Obstacles);
+      // obstacle_detector::ObstaclesPtr obstacles_msg(new obstacle_detector::Obstacles);
+      obstacle_msgs::msg::Obstacles::SharedPtr obstacles_msg = std::make_shared<obstacle_msgs::msg::Obstacles>();
       obstacles_msg->header.frame_id = p_frame_id_;
-      obstacles_msg->header.stamp = ros::Time::now();
-      obstacles_pub_.publish(obstacles_msg);
+      // obstacles_msg->header.stamp = ros::Time::now();
+      // obstacles_pub_.publish(obstacles_msg);
 
-      scan_sub_.shutdown();
-      pcl_sub_.shutdown();
-      obstacles_pub_.shutdown();
+      obstacles_msg->header.stamp = this->now();
+      obstacles_pub_->publish(*obstacles_msg);
+
+      // scan_sub_.shutdown();
+      // pcl_sub_.shutdown();
+      // obstacles_pub_.shutdown();
+      scan_sub_.reset();
+      pcl_sub_.reset();
+      obstacles_pub_.reset();
     }
   }
 
   return true;
 }
 
-void ObstacleExtractor::scanCallback(const sensor_msgs::LaserScan::ConstPtr scan_msg) {
+// void ObstacleExtractor::scanCallback(const sensor_msgs::LaserScan::ConstPtr scan_msg) {
+void ObstacleExtractor::scanCallback(const sensor_msgs::msg::LaserScan::SharedPtr scan_msg) {
   base_frame_id_ = scan_msg->header.frame_id;
-  stamp_ = scan_msg->header.stamp;
+  // stamp_ = scan_msg->header.stamp;
+  stamp_ = this->now();
 
   double phi = scan_msg->angle_min;
 
@@ -145,12 +216,16 @@ void ObstacleExtractor::scanCallback(const sensor_msgs::LaserScan::ConstPtr scan
   processPoints();
 }
 
-void ObstacleExtractor::pclCallback(const sensor_msgs::PointCloud::ConstPtr pcl_msg) {
-  base_frame_id_ = pcl_msg->header.frame_id;
-  stamp_ = pcl_msg->header.stamp;
+// void ObstacleExtractor::pclCallback(const sensor_msgs::PointCloud2::ConstPtr pcl_msg) {
+//   base_frame_id_ = pcl_msg->header.frame_id;
+//   stamp_ = pcl_msg->header.stamp;
 
-  for (const geometry_msgs::Point32& point : pcl_msg->points)
-    input_points_.push_back(Point(point.x, point.y));
+//   for (const geometry_msgs::Point32& point : pcl_msg->points)
+void ObstacleExtractor::pclCallback(const sensor_msgs::msg::PointCloud2::SharedPtr pcl_msg) {
+  base_frame_id_ = pcl_msg->header.frame_id;
+  stamp_ = this->now();
+
+  input_points_.push_back(Point(point.x, point.y));
 
   processPoints();
 }
@@ -182,6 +257,8 @@ void ObstacleExtractor::groupPoints() {
   for (PointIterator point = input_points_.begin()++; point != input_points_.end(); ++point) {
     double range = (*point).length();
     double distance = (*point - *point_set.end).length();
+
+    // RCLCPP_INFO(this->get_logger(), "range: %f, distance: %f, sin_dp: %f", range, distance, sin_dp);
 
     if (distance < p_max_group_distance_ + range * p_distance_proportion_) {
       point_set.end = point;
@@ -403,18 +480,26 @@ bool ObstacleExtractor::compareCircles(const Circle& c1, const Circle& c2, Circl
 }
 
 void ObstacleExtractor::publishObstacles() {
-  obstacle_detector::ObstaclesPtr obstacles_msg(new obstacle_detector::Obstacles);
-  obstacles_msg->header.stamp = stamp_;
+  // obstacle_detector::ObstaclesPtr obstacles_msg(new obstacle_detector::Obstacles);
+  // obstacles_msg->header.stamp = stamp_;
+  obstacle_msgs::msg::Obstacles obstacles_msg;
+  obstacles_msg.header.stamp = stamp_;
+
 
   if (p_transform_coordinates_) {
-    tf::StampedTransform transform;
+    // tf::StampedTransform transform;
+    tf2::Stamped<tf2::Transform> transform;
+
 
     try {
-      tf_listener_.waitForTransform(p_frame_id_, base_frame_id_, stamp_, ros::Duration(0.1));
-      tf_listener_.lookupTransform(p_frame_id_, base_frame_id_, stamp_, transform);
+      tf_buffer_->lookupTransform(p_frame_id_, base_frame_id_, stamp_, rclcpp::Duration(0.1));
     }
-    catch (tf::TransformException& ex) {
-      ROS_INFO_STREAM(ex.what());
+    // catch (tf::TransformException& ex) {
+    //   ROS_INFO_STREAM(ex.what());
+    //   return;
+    // }
+    catch (tf2::TransformException& ex) {
+      RCLCPP_INFO_STREAM(get_logger(), ex.what());
       return;
     }
 
@@ -426,27 +511,32 @@ void ObstacleExtractor::publishObstacles() {
     for (Circle& c : circles_)
       c.center = transformPoint(c.center, transform);
 
-    obstacles_msg->header.frame_id = p_frame_id_;
+    // obstacles_msg->header.frame_id = p_frame_id_;
+    obstacles_msg.header.frame_id = p_frame_id_;
   }
   else
-    obstacles_msg->header.frame_id = base_frame_id_;
+    // obstacles_msg->header.frame_id = base_frame_id_;
+    obstacles_msg.header.frame_id = base_frame_id_;
 
 
   for (const Segment& s : segments_) {
-    SegmentObstacle segment;
+    // SegmentObstacle segment;
+    obstacle_msgs::msg::SegmentObstacle segment;
 
     segment.first_point.x = s.first_point.x;
     segment.first_point.y = s.first_point.y;
     segment.last_point.x = s.last_point.x;
     segment.last_point.y = s.last_point.y;
 
-    obstacles_msg->segments.push_back(segment);
+    // obstacles_msg->segments.push_back(segment);
+    obstacles_msg.segments.push_back(segment);
   }
 
   for (const Circle& c : circles_) {
     if (c.center.x > p_min_x_limit_ && c.center.x < p_max_x_limit_ &&
         c.center.y > p_min_y_limit_ && c.center.y < p_max_y_limit_) {
-        CircleObstacle circle;
+        // CircleObstacle circle;
+        obstacle_msgs::msg::CircleObstacle circle;
 
         circle.center.x = c.center.x;
         circle.center.y = c.center.y;
@@ -455,9 +545,14 @@ void ObstacleExtractor::publishObstacles() {
         circle.radius = c.radius;
         circle.true_radius = c.radius - p_radius_enlargement_;
 
-        obstacles_msg->circles.push_back(circle);
+        // obstacles_msg->circles.push_back(circle);
+        obstacles_msg.circles.push_back(circle);
     }
   }
 
-  obstacles_pub_.publish(obstacles_msg);
+  // obstacles_pub_.publish(obstacles_msg);
+  obstacles_pub_->publish(obstacles_msg);
 }
+
+#include <rclcpp_components/register_node_macro.hpp>
+RCLCPP_COMPONENTS_REGISTER_NODE(obstacle_detector::ObstacleExtractor)
