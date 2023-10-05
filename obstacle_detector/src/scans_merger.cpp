@@ -167,7 +167,7 @@ void ScansMerger::frontScanCallback(const sensor_msgs::msg::LaserScan::SharedPtr
     rclcpp::Time _stamp(front_scan->header.stamp.sec + _time.seconds(), front_scan->header.stamp.nanosec + _time.nanoseconds());
 
     tf_buffer_->lookupTransform(front_scan->header.frame_id, p_fixed_frame_id_,
-                            _stamp, rclcpp::Duration(0.05));
+                            _stamp, rclcpp::Duration(0,50000000));
     projector_.transformLaserScanToPointCloud(p_fixed_frame_id_, *front_scan, front_pcl_, *tf_buffer_);
   }
   // catch (tf::TransformException& ex) {
@@ -194,7 +194,7 @@ void ScansMerger::rearScanCallback(const sensor_msgs::msg::LaserScan::SharedPtr 
     rclcpp::Time _stamp(rear_scan->header.stamp.sec + _time.seconds(), rear_scan->header.stamp.nanosec + _time.nanoseconds());
 
     tf_buffer_->lookupTransform(rear_scan->header.frame_id, p_fixed_frame_id_,
-                            _stamp, rclcpp::Duration(0.05));
+                            _stamp, rclcpp::Duration(0,50000000));
     projector_.transformLaserScanToPointCloud(p_fixed_frame_id_, *rear_scan, rear_pcl_, *tf_buffer_);
   }
   // catch (tf::TransformException& ex) {
@@ -228,7 +228,7 @@ void ScansMerger::publishMessages() {
     try {
       // tf_ls_.waitForTransform(p_target_frame_id_, now, front_pcl_.header.frame_id, front_pcl_.header.stamp, p_fixed_frame_id_, ros::Duration(0.05));
       tf_buffer_->lookupTransform(p_target_frame_id_, front_pcl_.header.frame_id,
-                              front_pcl_.header.stamp, rclcpp::Duration(0.05));
+                              front_pcl_.header.stamp, rclcpp::Duration(0,50000000));
       // tf_ls_.transformPointCloud2(p_target_frame_id_, now, front_pcl_, p_fixed_frame_id_, new_front_pcl);
       tf_buffer_->transform(front_pcl_, new_front_pcl, p_target_frame_id_);
     }
@@ -267,7 +267,7 @@ void ScansMerger::publishMessages() {
     try {
       // tf_ls_.waitForTransform(p_target_frame_id_, now, rear_pcl_.header.frame_id, rear_pcl_.header.stamp, p_fixed_frame_id_, ros::Duration(0.05));
       tf_buffer_->lookupTransform(p_target_frame_id_, rear_pcl_.header.frame_id,
-                              rear_pcl_.header.stamp, rclcpp::Duration(0.05));
+                              rear_pcl_.header.stamp, rclcpp::Duration(0,50000000));
       // tf_ls_.transformPointCloud2(p_target_frame_id_, now, rear_pcl_,  p_fixed_frame_id_, new_rear_pcl);
       tf_buffer_->transform(rear_pcl_, new_rear_pcl, p_target_frame_id_);
     }

@@ -492,7 +492,7 @@ void ObstacleExtractor::publishObstacles() {
 
 
     try {
-      tf_buffer_->lookupTransform(p_frame_id_, base_frame_id_, stamp_, rclcpp::Duration(0.1));
+      tf_buffer_->lookupTransform(p_frame_id_, base_frame_id_, stamp_, rclcpp::Duration(0,100000000));
     }
     // catch (tf::TransformException& ex) {
     //   ROS_INFO_STREAM(ex.what());
